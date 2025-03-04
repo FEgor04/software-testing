@@ -8,7 +8,7 @@ def sin_power_series(x, eps=1e-10):
     term = x
     result = x
     n = 1
-    while abs(term) * 10 > eps:
+    while abs(term) > eps:
         term = -term * x * x / ((2 * n) * (2 * n + 1))
         result += term
         n += 1
