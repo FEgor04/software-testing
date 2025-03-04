@@ -14,23 +14,7 @@
 
 С помощью тривиальной математики реализуем вычисление синуса с заданной точностью:
 
-\begin{minted}{python}
-def sin_power_series(x, eps=1e-10):
-    """
-    Вычисляет sin(x) по степенному ряду:
-    Итерации продолжаются, пока абсолютное значение последнего слагаемого > eps.
-    По очевидным причинам этого достаточно, чтобы полученное значение
-    не отходило от настоящего значения синуса больше, чем на eps.
-    """
-    term = x
-    result = x
-    n = 1
-    while abs(term) > eps:
-        term = -term * x * x / ((2 * n) * (2 * n + 1))
-        result += term
-        n += 1
-    return result
-\end{minted}
+\inputminted{python}{./solution/solution.py}
 
 Для данной функции можно предложить следующее покрытие.
 Точность \texttt{eps} в данном случае можно зафиксировать произвольную.
@@ -49,3 +33,6 @@ def sin_power_series(x, eps=1e-10):
 	      \[ | \sin_\varepsilon^* x - \sin x | \leq \varepsilon \]
 	      где \( \sin_\varepsilon^* \) -- результат вызова функции \texttt{sin\_power\_series} с соответствующими аргументами
 \end{itemize}
+
+Реализация данных тестов приведена в листинге ниже.
+\inputminted{python}{./solution/tests.py}
