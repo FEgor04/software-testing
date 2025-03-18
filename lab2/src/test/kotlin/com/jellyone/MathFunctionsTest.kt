@@ -3,6 +3,11 @@ package com.jellyone
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyDouble
+import org.mockito.ArgumentMatchers.eq
+import org.mockito.Mockito.mockStatic
+import org.mockito.Mockito.`when`
+import kotlin.math.E
 import kotlin.math.PI
 import kotlin.math.abs
 
@@ -264,62 +269,56 @@ class MathFunctionsTest {
         }
     }
 
+    // Интеграционные тесты
+
     @Test
-    fun `test complexExpression for x is less than or equal to 0`() {
-        /* Test coverage analysis:
-         * - Tests complexExpression at special values (0, -π/6, -π/4, -π/3, -π/2, etc.)
-         * - Tests negative inputs
-         * - Tests symmetry properties and relationships between trigonometric functions
-         *
-         * This provides adequate coverage because it:
-         * 1. Tests critical points (0, -π/2, -π)
-         * 2. Verifies the implementation uses the correct relationships between functions
-         * 3. Tests the symmetry property
-         * 4. Verifies accuracy against known values
-         */
+    fun `test complexExpression for positive x values (logarithmic branch)`() {
+        // x = 1 (граничный случай, log_b(1) = 0)
+//        assertEquals(0.0, complexExpression(1.0, precision), delta)
 
-        // Test special angles
-//        assertEquals(Double.NaN, complexExpression(0.0, precision), delta)
-//        assertEquals(-1.0, complexExpression(-PI/2, precision), delta)
+        // x = e (натуральный логарифм должен давать ln(e) = 1)
+        assertEquals(1.0, log(E, E, precision), delta)  // Проверяем вспомогательно
 
-        // Test negative inputs
-//        assertEquals(complexExpression(-PI/4, precision), complexExpression(PI/4, precision), delta)
+        // x = 10 (стандартное основание для логарифмов)
+        val log10_10 = log(10.0, 10.0, precision)
+        assertEquals(1.0, log10_10, delta)
 
-        // Verify relationships between functions
-        val testValues = listOf(-0.1, -0.5, -1.0, -1.5, -2.0)
-        for (x in testValues) {
-            val result = complexExpression(x, precision)
-            // Add specific assertions based on expected results
-        }
+        // x = 2, 5, 100 (тестирование логарифмов с разными основаниями)
+        assertEquals(log(2.0, 2.0, precision), 1.0, delta)
+        assertEquals(log(5.0, 5.0, precision), 1.0, delta)
+        assertTrue(complexExpression(100.0, precision) > 0)  // Проверяем, что значение адекватное
     }
 
     @Test
-    fun `test complexExpression for x is bigger than 0`() {
-        /* Test coverage analysis:
-         * - Tests complexExpression at special values (1, 2, 5, 10, etc.)
-         * - Tests positive inputs
-         * - Tests relationships between logarithmic functions
-         *
-         * This provides adequate coverage because it:
-         * 1. Tests critical points (1, e, powers of e)
-         * 2. Verifies the implementation uses the correct relationships between functions
-         * 3. Tests the properties of logarithmic functions
-         * 4. Verifies accuracy against known values
-         */
+    fun `test complexExpression for negative x values (trigonometric branch)`() {
+        // x = -π/4 (тест тригонометрических функций)
+        assertTrue(complexExpression(-PI / 4, precision).isFinite())
 
-        // Test special values
-//        assertEquals(Double.NaN, complexExpression(1.0, precision), delta)
-//        assertEquals(1.0, complexExpression(2.0, precision), delta)
+        // x = -π/2 (особый случай для тригонометрии)
+        assertTrue(complexExpression(-PI / 2, precision).isNaN())
 
-        // Test positive inputs
-        assertEquals(complexExpression(5.0, precision), complexExpression(5.0, precision), delta)
+        // x = -π (особый случай, т.к. cos(π) = -1, sin(π) = 0)
+        assertTrue(complexExpression(-PI, precision).isFinite())
 
-        // Verify relationships between functions
-        val testValues = listOf(0.1, 0.5, 1.0, 1.5, 2.0)
-        for (x in testValues) {
-            val result = complexExpression(x, precision)
-            // Add specific assertions based on expected results
-        }
+        // x = -10 (проверка больших отрицательных значений)
+        assertTrue(complexExpression(-10.0, precision).isFinite())
     }
 
+    @Test
+    fun `test complexExpression at x = 0 (switch point)`() {
+        assertTrue(complexExpression(0.0, precision).isNaN())
+    }
+
+    @Test
+    fun `test large values of x`() {
+        assertTrue(complexExpression(100.0, precision) > 0)
+        assertTrue(complexExpression(-100.0, precision).isFinite())
+    }
+
+    @Test
+    fun `test precision impact on results`() {
+        val result1 = complexExpression(2.0, 1e-10)
+        val result2 = complexExpression(2.0, 1e-5)
+        assertNotEquals(result1, result2)
+    }
 } 
