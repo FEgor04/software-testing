@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "csv-plotter"
+version = "0.1.0"
+description = "A simple project to plot data from a CSV file"
+authors = ["User"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = "^2.2.3"
+matplotlib = "^3.10.1"
+seaborn = "^0.13.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
