@@ -19,6 +19,7 @@ fun sin(x: Double, precision: Double): Double {
 }
 
 fun ln(x: Double, precision: Double): Double {
+    if (x <= 0) throw IllegalArgumentException("ln(x) is undefined for x <= 0")
     if (x == 1.0) return 0.0
 
     val y = (x - 1) / (x + 1)
@@ -52,9 +53,6 @@ fun csc(x: Double, precision: Double): Double {
 }
 
 fun complexExpression(x: Double, precision: Double): Double {
-
-
-
     val result = if (x <= 0) {
         val secX = sec(x, precision)
         val cscX = csc(x, precision)
@@ -94,5 +92,5 @@ fun writeToCSV(filename: String, start: Double, end: Double, step: Double, preci
 fun main() {
     print("x,secX,cscX,cosX,sinX,cotX,log5X,log2X,log10X,lnX,log3X,result\n")
     val precision = 1e-10
-    writeToCSV("results.csv", -PI, PI, 0.01, precision)
+    writeToCSV("results.csv", -PI, PI, 0.1, precision)
 }
