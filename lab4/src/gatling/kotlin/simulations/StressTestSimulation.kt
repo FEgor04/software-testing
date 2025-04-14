@@ -4,46 +4,71 @@ import io.gatling.javaapi.core.CoreDsl.*
 import io.gatling.javaapi.http.HttpDsl.*
 import io.gatling.javaapi.core.*
 import io.gatling.javaapi.http.*
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
-
 
 class StressTestSimulation : Simulation() {
 
     private val httpProtocol: HttpProtocolBuilder = http
         .baseUrl("http://localhost:8080")
-        .acceptHeader("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-        .doNotTrackHeader("1")
-        .acceptLanguageHeader("en-US,en;q=0.5")
-        .acceptEncodingHeader("gzip, deflate")
-        .userAgentHeader("Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0")
+        .acceptHeader("application/json")
+        .userAgentHeader("Gatling-Stress-Test")
 
-    // This will be modified based on the selected configuration from load testing
-    private val selectedConfig = scenario("Selected Configuration Stress Test")
-        .exec(http("request")
-            .get("/?token=495356269&user=-2105802621&config=1") // Added leading slash to make it absolute
-            .check(status().`is`(200)))
-
+    private val config1Scenario = scenario("Stress Test: Config 1 ($1700)")
+        .exec(
+            http("Request Config 1")
+                .get("/?token=495356269&user=-2105802621&config=1")
+                .check(
+                    status().`is`(200),
+                    status().not(403),
+                    status().not(503)
+                )
+        )
 
     init {
-        // Stress test parameters
-        val baseUsers = 50 // Starting number of users
-        val maxUsers = 100 // Maximum number of users to test
-        val stepDuration = 30.seconds.toJavaDuration() // Duration of each step
-        val rampUpTime = 5.seconds.toJavaDuration() // Time to ramp up users in each step
+        // Параметры стресс-теста
+        val minUsers = 5              // начальное число пользователей
+        val maxUsers = 200           // максимальное количество одновременных пользователей
+        val step = 50                 // шаг увеличения нагрузки (по 50 пользователей)
+        val rampTime = 5.seconds.toJavaDuration()   // время на разгон нагрузки между шагами
+        val holdTime = 15.seconds.toJavaDuration()  // время удержания нагрузки на каждом уровне
 
-        // Create a list of injection steps
-        val injectionSteps = (baseUsers..maxUsers step 10).map { users ->
-            constantConcurrentUsers(users).during(stepDuration)
+        // Вычисляем количество шагов, чтобы знать общую продолжительность
+        val steps = (maxUsers - minUsers) / step + 1
+
+        // Список шагов инъекции нагрузки (нагрузка увеличивается поэтапно)
+        val injectionSteps = mutableListOf<ClosedInjectionStep>()
+        var currentUsers = minUsers
+
+        // Заполняем список нагрузок: поэтапно увеличиваем пользователей
+        while (currentUsers <= maxUsers) {
+            // Плавный разгон от предыдущего уровня пользователей до текущего
+            injectionSteps.add(
+                rampConcurrentUsers(if (currentUsers == minUsers) 0 else currentUsers - step)
+                    .to(currentUsers)
+                    .during(rampTime)
+            )
+
+            // Удерживаем текущую нагрузку в течение holdTime
+            injectionSteps.add(
+                constantConcurrentUsers(currentUsers)
+                    .during(holdTime)
+            )
+
+            currentUsers += step // переходим к следующему шагу
         }
 
+        // Устанавливаем план тестирования
         setUp(
-            selectedConfig.injectClosed(*injectionSteps.toTypedArray())
-        ).maxDuration(stepDuration.multipliedBy((injectionSteps.size + 1).toLong()))
-         .assertions(
-            global().responseTime().max().lt(760), // Maximum response time should be less than 760ms
-            global().successfulRequests().percent().gt(95.0) // 95% of requests should be successful
-         ) .protocols(httpProtocol)
+            config1Scenario.injectClosed(*injectionSteps.toTypedArray()) // запускаем нагрузку
+        )
+            .protocols(httpProtocol) // используем заданный протокол
+            .maxDuration( // ограничиваем максимальную длительность теста (на всякий случай)
+                rampTime.multipliedBy(steps.toLong()).plus(holdTime.multipliedBy(steps.toLong()))
+            )
+            .assertions( // Устанавливаем критерии успешности теста
+                global().responseTime().max().lt(760),       // максимальное время отклика должно быть < 760 мс
+                global().successfulRequests().percent().gt(95.0) // минимум 95% успешных запросов
+            )
     }
 }
